@@ -1,5 +1,5 @@
 //
-//  MailViewController.swift
+//  MailCollectionViewController.swift
 //
 //  Created by Jeremy Koch
 //  Copyright © 2017 Jeremy Koch. All rights reserved.
@@ -8,10 +8,10 @@
 import UIKit
 import SwipeCellKit
 
-class MailViewController: UITableViewController {
+class MailCollectionViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
     var emails: [Email] = []
     
-    var defaultOptions = SwipeTableOptions()
+    var defaultOptions = SwipeOptions()
     var isSwipeRightEnabled = true
     var buttonDisplayMode: ButtonDisplayMode = .titleAndImage
     var buttonStyle: ButtonStyle = .backgroundColor
@@ -19,27 +19,46 @@ class MailViewController: UITableViewController {
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
-        tableView.allowsSelection = true
-        tableView.allowsMultipleSelectionDuringEditing = true
-        
-        tableView.rowHeight = UITableViewAutomaticDimension
-        tableView.estimatedRowHeight = 100
-        
-        navigationItem.rightBarButtonItem = editButtonItem
+        collectionView?.allowsSelection = true
+        collectionView?.allowsMultipleSelection = true
         
         view.layoutMargins.left = 32
+        
+        if let collectionView = collectionView {
+            let flowLayout = collectionView.collectionViewLayout as! UICollectionViewFlowLayout
+            flowLayout.minimumLineSpacing = 0
+            flowLayout.minimumInteritemSpacing = 0
+            flowLayout.itemSize = CGSize(width: collectionView.frame.width / 2.0, height: 110)
+        }
+        
+        navigationItem.rightBarButtonItem = editButtonItem
         
         resetData()
     }
     
-    // MARK: - Table view data source
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        coordinator.animate(alongsideTransition: { (ctx) in
+            if let collectionView = self.collectionView {
+                collectionView.collectionViewLayout.invalidateLayout()
+                collectionView.performBatchUpdates({
+                    let flowLayout = collectionView.collectionViewLayout as! UICollectionViewFlowLayout
+                    flowLayout.itemSize = CGSize(width: collectionView.frame.width / 2.0, height: 110)
+                    collectionView.setCollectionViewLayout(flowLayout, animated: true)
+                }, completion: nil)
+            }
+        }, completion: nil)
+    }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    // MARK: - Collection view data source
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return emails.count
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MailCell") as! MailCell
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MailCell", for: indexPath) as! MailCollectionViewCell
+        
         cell.delegate = self
         cell.selectedBackgroundView = createSelectedBackgroundView()
         
@@ -92,6 +111,7 @@ class MailViewController: UITableViewController {
         
     }
     
+    
     // MARK: - Helpers
     
     func createSelectedBackgroundView() -> UIView {
@@ -103,12 +123,12 @@ class MailViewController: UITableViewController {
     func resetData() {
         emails = mockEmails
         emails.forEach { $0.unread = false }
-        tableView.reloadData()
+        collectionView?.reloadData()
     }
 }
 
-extension MailViewController: SwipeTableViewCellDelegate {
-    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
+extension MailCollectionViewController: SwipeCollectionViewCellDelegate {
+    func collectionView(_ collectionView: UICollectionView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
         let email = emails[indexPath.row]
         
         if orientation == .left {
@@ -118,7 +138,7 @@ extension MailViewController: SwipeTableViewCellDelegate {
                 let updatedStatus = !email.unread
                 email.unread = updatedStatus
                 
-                let cell = tableView.cellForRow(at: indexPath) as! MailCell
+                let cell = collectionView.cellForItem(at: indexPath) as! MailCollectionViewCell
                 cell.setUnread(updatedStatus, animated: true)
             }
             
@@ -139,7 +159,7 @@ extension MailViewController: SwipeTableViewCellDelegate {
             }
             configure(action: delete, with: .trash)
             
-            let cell = tableView.cellForRow(at: indexPath) as! MailCell
+            let cell = collectionView.cellForItem(at: indexPath) as! MailCollectionViewCell
             let closure: (UIAlertAction) -> Void = { _ in cell.hideSwipe(animated: true) }
             let more = SwipeAction(style: .default, title: nil) { action, indexPath in
                 let controller = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
@@ -157,8 +177,8 @@ extension MailViewController: SwipeTableViewCellDelegate {
         }
     }
     
-    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeTableOptions {
-        var options = SwipeTableOptions()
+    func collectionView(_ collectionView: UICollectionView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeOptions {
+        var options = SwipeOptions()
         options.expansionStyle = orientation == .left ? .selection : .destructive
         options.transitionStyle = defaultOptions.transitionStyle
         
@@ -189,7 +209,7 @@ extension MailViewController: SwipeTableViewCellDelegate {
     }
 }
 
-class MailCell: SwipeTableViewCell {
+class MailCollectionViewCell: SwipeCollectionViewCell {
     @IBOutlet var fromLabel: UILabel!
     @IBOutlet var dateLabel: UILabel!
     @IBOutlet var subjectLabel: UILabel!
@@ -218,7 +238,7 @@ class MailCell: SwipeTableViewCell {
         let size: CGFloat = 12
         indicatorView.widthAnchor.constraint(equalToConstant: size).isActive = true
         indicatorView.heightAnchor.constraint(equalTo: indicatorView.widthAnchor).isActive = true
-        indicatorView.centerXAnchor.constraint(equalTo: fromLabel.leftAnchor, constant: -16).isActive = true
+        indicatorView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: 12).isActive = true
         indicatorView.centerYAnchor.constraint(equalTo: fromLabel.centerYAnchor).isActive = true
     }
     
@@ -240,62 +260,4 @@ class MailCell: SwipeTableViewCell {
             closure()
         }
     }
-}
-
-class IndicatorView: UIView {
-    var color = UIColor.clear {
-        didSet { setNeedsDisplay() }
-    }
-    
-    override func draw(_ rect: CGRect) {
-        color.set()
-        UIBezierPath(ovalIn: rect).fill()
-    }
-}
-
-enum ActionDescriptor {
-    case read, unread, more, flag, trash
-    
-    func title(forDisplayMode displayMode: ButtonDisplayMode) -> String? {
-        guard displayMode != .imageOnly else { return nil }
-        
-        switch self {
-        case .read: return "Read"
-        case .unread: return "Unread"
-        case .more: return "More"
-        case .flag: return "Flag"
-        case .trash: return "Trash"
-        }
-    }
-    
-    func image(forStyle style: ButtonStyle, displayMode: ButtonDisplayMode) -> UIImage? {
-        guard displayMode != .titleOnly else { return nil }
-        
-        let name: String
-        switch self {
-        case .read: name = "Read"
-        case .unread: name = "Unread"
-        case .more: name = "More"
-        case .flag: name = "Flag"
-        case .trash: name = "Trash"
-        }
-        
-        return UIImage(named: style == .backgroundColor ? name : name + "-circle")
-    }
-    
-    var color: UIColor {
-        switch self {
-        case .read, .unread: return #colorLiteral(red: 0, green: 0.4577052593, blue: 1, alpha: 1)
-        case .more: return #colorLiteral(red: 0.7803494334, green: 0.7761332393, blue: 0.7967314124, alpha: 1)
-        case .flag: return #colorLiteral(red: 1, green: 0.5803921569, blue: 0, alpha: 1)
-        case .trash: return #colorLiteral(red: 1, green: 0.2352941176, blue: 0.1882352941, alpha: 1)
-        }
-    }
-}
-enum ButtonDisplayMode {
-    case titleAndImage, titleOnly, imageOnly
-}
-
-enum ButtonStyle {
-    case backgroundColor, circular
 }
