@@ -49,10 +49,15 @@ class SwipeActionButton: UIButton {
         titleLabel?.numberOfLines = 0
         
         accessibilityLabel = action.accessibilityLabel
-        
-        setTitle(action.title, for: .normal)
-        setTitleColor(tintColor, for: .normal)
-        setTitleColor(highlightedTextColor, for: .highlighted)
+
+        if let attributedTitle = action.attributedTitle {
+            setAttributedTitle(attributedTitle, for: .normal)
+        } else {
+            setTitle(action.title, for: .normal)
+            setTitleColor(tintColor, for: .normal)
+            setTitleColor(highlightedTextColor, for: .highlighted)
+        }
+
         setImage(action.image, for: .normal)
         setImage(action.highlightedImage ?? action.image, for: .highlighted)
     }
@@ -74,12 +79,18 @@ class SwipeActionButton: UIButton {
     }
     
     func titleBoundingRect(with size: CGSize) -> CGRect {
-        guard let title = currentTitle, let font = titleLabel?.font else { return .zero }
-        
-        return title.boundingRect(with: size,
-                                  options: [.usesLineFragmentOrigin],
-                                  attributes: [NSAttributedStringKey.font: font],
-                                  context: nil).integral
+        let sharedOptions = [NSStringDrawingOptions.usesLineFragmentOrigin]
+        if let title = currentTitle, let font = titleLabel?.font {
+            return title.boundingRect(with: size,
+                                      options: sharedOptions,
+                                      attributes: [NSAttributedStringKey.font: font],
+                                      context: nil).integral
+        } else if let attributedTitle = currentAttributedTitle {
+            return attributedTitle.boundingRect(with: size,
+                                                options: sharedOptions,
+                                                context: nil).integral
+        }
+        return .zero
     }
     
     override func titleRect(forContentRect contentRect: CGRect) -> CGRect {
