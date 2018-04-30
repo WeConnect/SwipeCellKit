@@ -125,6 +125,15 @@ class MailCollectionViewController: UICollectionViewController, UICollectionView
         emails.forEach { $0.unread = false }
         collectionView?.reloadData()
     }
+
+    // MARK: - UICollectionViewDelegate
+
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
+        let targetViewController = UIViewController()
+        targetViewController.view.backgroundColor = .white
+        navigationController?.pushViewController(targetViewController, animated: true)
+    }
 }
 
 extension MailCollectionViewController: SwipeCollectionViewCellDelegate {
