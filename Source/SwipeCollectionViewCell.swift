@@ -511,7 +511,7 @@ extension SwipeCollectionViewCell {
                 $0.state.isActive || $0.panGestureRecognizer.state == .began ||
                     $0.panGestureRecognizer.state == .changed || $0.panGestureRecognizer.state == .ended
             })
-            return swipedCell == nil ? false : true
+            return swipedCell != nil
         }
         
         if gestureRecognizer == panGestureRecognizer,
