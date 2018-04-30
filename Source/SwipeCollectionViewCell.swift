@@ -507,10 +507,11 @@ extension SwipeCollectionViewCell {
                 collectionView?.hideSwipeCell()
             }
             
-            if let cells = collectionView?.visibleCells as? [SwipeCollectionViewCell] {
-                let cell = cells.first(where: { $0.state.isActive })
-                return cell == nil ? false : true
-            }
+            let swipedCell = collectionView?.swipeCells.first(where: {
+                $0.state.isActive || $0.panGestureRecognizer.state == .began ||
+                    $0.panGestureRecognizer.state == .changed || $0.panGestureRecognizer.state == .ended
+            })
+            return swipedCell != nil
         }
         
         if gestureRecognizer == panGestureRecognizer,
