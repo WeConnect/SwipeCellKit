@@ -22,8 +22,12 @@ extension SwipeCollectionViewCell {
      - parameter completion: The closure to be executed once the animation has finished. A `Boolean` argument indicates whether or not the animations actually finished before the completion handler was called.
      */
     public func hideSwipe(animated: Bool, completion: ((Bool) -> Void)? = nil) {
-        guard state == .left || state == .right else { return }
-        
+        // Ying: Removed the guard here because performFillAction, on some circumstances,
+        // does not set the state to left or right, but it does move the
+        // contentViewCenter, causing the contentViewCenter to be permanently
+        // off the screen for this cell.
+        // guard state == .left || state == .right else { return }
+
         state = .animatingToCenter
         
         let targetCenter = self.targetCenter(active: false)
